@@ -1,0 +1,131 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/* Shape and hairline follow the Shell's own pill (.dash-label, .window-caption). Every length is in em so
+   the pill scales with GNOME's text size, like the panel; the 1px hairline keeps the edge on dark windows. */
+.voxtype-pill {
+  background-color: rgba(17, 20, 18, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  font-size: 1em;
+  padding: 0.3em 0.9em 0.3em 0.7em;
+  spacing: 0.5455em;
+}
+
+/* Same hairline as the Shell's own pill, but opaque black and stronger, as it draws it under high contrast.
+   extension.js toggles the class from St.Settings. */
+.voxtype-pill.high-contrast {
+  background-color: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* The orbs, drawn with Cairo from the colour of their state's class. 1.0909em is the Shell's own status icon
+   (16px at 11pt), in the panel and in the pill. */
+.voxtype-orb {
+  width: 1.0909em;
+  height: 1.0909em;
+}
+
+.voxtype-orb.recording {
+  color: #ff6267;
+}
+
+.voxtype-orb.transcribing {
+  color: #ffad42;
+}
+
+.voxtype-orb.idle,
+.voxtype-orb.offline {
+  color: #ffffff;
+}
+
+.voxtype-label {
+  color: #ffffff;
+}
+
+/* Light shell styles paint the panel #fafafb, where the brand colours fall under 3:1. The orb's dots are
+   sub-pixel at 16px, so its peak pixel reaches about 80% of the ink: these inks are dark enough for the peak to
+   hold 3:1. extension.js adds .light-panel from the panel's own background; the pill stays dark. */
+.voxtype-orb.recording.light-panel {
+  color: #c8323a;
+}
+
+.voxtype-orb.transcribing.light-panel {
+  color: #9a5c12;
+}
+
+/* The Seed (idle, not running) takes the panel foreground: dark ink on a light panel, white otherwise. */
+.voxtype-orb.idle.light-panel,
+.voxtype-orb.offline.light-panel {
+  color: #2e3436;
+}
+
+/* The menu is one family with the orb. Every length is in em, so it scales with GNOME's text size. */
+.voxtype-menu {
+  -arrow-border-radius: 1em;
+}
+
+.voxtype-menu-box {
+  min-width: 22em;
+}
+
+.voxtype-header {
+  padding: 0.65em 0.7em 0.55em;
+  spacing: 0.8em;
+}
+
+.voxtype-orb-header {
+  width: 1.8182em;
+  height: 1.8182em;
+}
+
+.voxtype-line {
+  font-size: 0.9em;
+}
+
+.voxtype-action {
+  min-height: 2.35em;
+  border-radius: 0.6em;
+}
+
+/* Key caps: the user's own shortcut, drawn as a hairline outline with no fill and no shadow. */
+.voxtype-caps {
+  spacing: 0.25em;
+}
+
+.voxtype-cap {
+  font-size: 0.78em;
+  min-width: 1.7em;
+  padding: 0 0.45em;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 0.35em;
+}
+
+.voxtype-cap.light {
+  border-color: rgba(46, 52, 54, 0.32);
+}
+
+/* The offline command, a chip that copies itself. */
+.voxtype-chip-row {
+  padding: 0 0.7em 0.55em 3.2182em;
+}
+
+.voxtype-chip {
+  background-color: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.5em;
+  padding: 0.22em 0.6em;
+}
+
+.voxtype-chip.light {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-color: rgba(46, 52, 54, 0.18);
+}
+
+.voxtype-chip-text {
+  font-family: monospace;
+  font-size: 0.84em;
+}
+
+.voxtype-chip-icon {
+  icon-size: 1em;
+  margin-left: 0.6em;
+}

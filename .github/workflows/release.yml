@@ -1,0 +1,212 @@
+name: Release
+
+on:
+  pull_request:
+  push:
+    branches:
+      - dev
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  UUID: voxtype-indicator@theophilediot.github.io
+  ZIP: dist/voxtype-indicator@theophilediot.github.io.shell-extension.zip
+
+jobs:
+  package:
+    name: Validate and package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Reject fork automation changes
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          changed="$(
+            git diff --name-only "$BASE_SHA" "$GITHUB_SHA" -- \
+              .github/workflows \
+              .github/dependabot.yml \
+              .github/CODEOWNERS \
+              Makefile
+          )"
+
+          if [ -n "$changed" ]; then
+            echo "Automation changes from fork pull requests are not accepted directly." >&2
+            echo "A maintainer must recreate the reviewed change from a trusted branch." >&2
+            printf '%s\n' "$changed" >&2
+            exit 1
+          fi
+
+      - name: Install GNOME packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnome-shell gjs jq unzip libglib2.0-bin
+
+      - name: Check release version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          expected="v$(cat VERSION)"
+          actual="${GITHUB_REF_NAME}"
+          test "$actual" = "$expected" || {
+            echo "Tag $actual does not match VERSION $expected" >&2
+            exit 1
+          }
+
+      - name: Validate metadata
+        run: |
+          test "$(jq -r '.uuid' metadata.json)" = "$UUID"
+          jq -e 'has("version") | not' metadata.json >/dev/null
+          test "$(jq -r '."settings-schema"' metadata.json)" = "org.gnome.shell.extensions.voxtype-indicator"
+          jq -e '."shell-version" | length > 0' metadata.json >/dev/null
+          test -f schemas/org.gnome.shell.extensions.voxtype-indicator.gschema.xml
+          test -f prefs.js
+          glib-compile-schemas --strict --dry-run schemas
+
+      - name: Build and test package
+        run: make test
+
+      - name: Verify package contents
+        run: |
+          unzip -l "$ZIP"
+          unzip -Z1 "$ZIP" | sort > actual-files.txt
+
+          # gnome-extensions pack adds the schema and a bare "schemas/" entry; it emits no gschemas.compiled.
+          for file in \
+            common.js \
+            extension.js \
+            levels.js \
+            metadata.json \
+            morph.js \
+            orb.js \
+            prefs.js \
+            schemas/ \
+            schemas/org.gnome.shell.extensions.voxtype-indicator.gschema.xml \
+            shortcuts.js \
+            source.js \
+            stylesheet.css \
+            trace.js
+          do
+            grep -Fqx -- "$file" actual-files.txt || {
+              echo "Missing expected package entry: $file" >&2
+              exit 1
+            }
+          done
+
+          if grep -Ev '^(metadata\.json|extension\.js|prefs\.js|common\.js|source\.js|levels\.js|trace\.js|orb\.js|morph\.js|shortcuts\.js|stylesheet\.css|schemas/|schemas/org\.gnome\.shell\.extensions\.voxtype-indicator\.gschema\.xml)$' actual-files.txt; then
+            echo "Package contains an unexpected file." >&2
+            exit 1
+          fi
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: extension-zip
+          path: ${{ env.ZIP }}
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish GitHub Release
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download package artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: extension-zip
+          path: dist
+          digest-mismatch: error
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test -f "$ZIP"
+
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$ZIP" \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$ZIP" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Dictation Indicator for Voxtype $GITHUB_REF_NAME" \
+              --generate-notes \
+              --verify-tag
+          fi
+
+  gnome:
+    name: Submit to GNOME Extensions
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/') && vars.GNOME_EXTENSIONS_UPLOAD_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: gnome-extensions
+      url: https://extensions.gnome.org/upload/
+    permissions:
+      contents: read
+
+    steps:
+      - name: Download package artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: extension-zip
+          path: dist
+          digest-mismatch: error
+
+      - name: Submit package for review
+        env:
+          GNOME_EXTENSIONS_TOKEN: ${{ secrets.GNOME_EXTENSIONS_TOKEN }}
+        run: |
+          test -f "$ZIP"
+
+          if [ -z "$GNOME_EXTENSIONS_TOKEN" ]; then
+            echo "GNOME_EXTENSIONS_TOKEN is required for GNOME Extensions upload." >&2
+            exit 1
+          fi
+
+          response_file="$(mktemp)"
+          http_code="$(
+            curl --silent --show-error --location --retry 3 --retry-delay 5 \
+              --connect-timeout 10 --max-time 120 \
+              --output "$response_file" \
+              --write-out "%{http_code}" \
+              --header "Authorization: Token ${GNOME_EXTENSIONS_TOKEN}" \
+              --form "source=@${ZIP};type=application/zip" \
+              --form "shell_license_compliant=true" \
+              --form "tos_compliant=true" \
+              https://extensions.gnome.org/api/v1/extensions
+          )"
+
+          if [ "$http_code" != "201" ]; then
+            echo "extensions.gnome.org upload failed with HTTP ${http_code}." >&2
+            cat "$response_file" >&2
+            exit 1
+          fi
+
+          echo "Package submitted to extensions.gnome.org for review."

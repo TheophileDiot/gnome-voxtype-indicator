@@ -1,0 +1,9 @@
+{
+  "name": "Dictation Indicator for Voxtype",
+  "description": "Shows what Voxtype is doing: a calm orb in the top bar while it is idle, a red trace that follows your voice and a \"Listening…\" pill at the top of the screen while it records, amber while it transcribes.\n\nThe top-bar menu starts, stops and cancels dictation, and a settings window controls the orb, the pill, the messages and the motion.\n\nVoxtype's own overlay needs wlr-layer-shell, which GNOME's compositor does not implement. This extension reads Voxtype's state file from inside GNOME Shell instead. It never takes keyboard focus, so the dictated text still lands in the window you were typing in. It spawns `voxtype record <verb>` only when you choose a menu item, and it never writes Voxtype's config. When Voxtype is not running, the menu shows the command that starts it; clicking it copies that command to the clipboard. The extension never reads the clipboard. Its settings window changes the GNOME custom shortcuts that run Voxtype only when you ask it to. Requires Voxtype with state_file = \"auto\" (the default).",
+  "uuid": "voxtype-indicator@theophilediot.github.io",
+  "settings-schema": "org.gnome.shell.extensions.voxtype-indicator",
+  "url": "https://github.com/TheophileDiot/gnome-voxtype-indicator",
+  "version-name": "0.1.0",
+  "shell-version": ["46", "47", "48", "49", "50"]
+}

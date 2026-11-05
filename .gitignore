@@ -1,0 +1,8 @@
+dist/
+*.zip
+*.shell-extension.zip
+*.swp
+*.swo
+*~
+.idea/
+.vscode/

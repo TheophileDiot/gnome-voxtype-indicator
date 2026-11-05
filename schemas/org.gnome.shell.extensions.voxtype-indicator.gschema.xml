@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <enum id="org.gnome.shell.extensions.voxtype-indicator.PanelOrb">
+    <value nick="always" value="0"/>
+    <value nick="busy" value="1"/>
+    <value nick="never" value="2"/>
+  </enum>
+  <enum id="org.gnome.shell.extensions.voxtype-indicator.PillMonitor">
+    <value nick="focused" value="0"/>
+    <value nick="primary" value="1"/>
+  </enum>
+  <enum id="org.gnome.shell.extensions.voxtype-indicator.Motion">
+    <value nick="follow" value="0"/>
+    <value nick="still" value="1"/>
+  </enum>
+
+  <schema id="org.gnome.shell.extensions.voxtype-indicator" path="/org/gnome/shell/extensions/voxtype-indicator/">
+    <key name="panel-orb" enum="org.gnome.shell.extensions.voxtype-indicator.PanelOrb">
+      <default>'always'</default>
+      <summary>Top-bar orb</summary>
+      <description>When the top-bar orb shows: always (the idle orb when Voxtype is idle), only while Voxtype is busy, or never.</description>
+    </key>
+    <key name="show-pill" type="b">
+      <default>true</default>
+      <summary>Show the pill</summary>
+      <description>Show the pill at the top centre of the screen while Voxtype is busy.</description>
+    </key>
+    <key name="pill-monitor" enum="org.gnome.shell.extensions.voxtype-indicator.PillMonitor">
+      <default>'focused'</default>
+      <summary>Monitor for the pill</summary>
+      <description>The monitor the pill appears on: the one with the focused window, or the primary one.</description>
+    </key>
+    <key name="mic-hints" type="b">
+      <default>true</default>
+      <summary>Warn about the microphone</summary>
+      <description>Show "Can't hear you" and "No signal" in the pill. Off keeps "Listening…".</description>
+    </key>
+    <key name="receipt" type="b">
+      <default>true</default>
+      <summary>Receipt when done</summary>
+      <description>Show "Done" or "Nothing heard" in the pill after transcribing.</description>
+    </key>
+    <key name="still-seconds" type="i">
+      <range min="3" max="60"/>
+      <default>8</default>
+      <summary>Delay before "Still transcribing…"</summary>
+      <description>Seconds of transcribing before the pill says "Still transcribing…".</description>
+    </key>
+    <key name="motion" enum="org.gnome.shell.extensions.voxtype-indicator.Motion">
+      <default>'follow'</default>
+      <summary>Orb motion</summary>
+      <description>Follow GNOME's animation setting, or always show still frames, with no fades and an instant hand-off.</description>
+    </key>
+    <key name="menu-controls" type="b">
+      <default>true</default>
+      <summary>Dictation actions in the menu</summary>
+      <description>Show Start dictation, Stop and transcribe and Cancel in the top-bar menu. They run "voxtype record" when chosen.</description>
+    </key>
+  </schema>
+</schemalist>
